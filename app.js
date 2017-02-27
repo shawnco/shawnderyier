@@ -12,10 +12,12 @@ var options = {
 		username: 'shawnderyier',
 		password: 'oauth:qqzk3f196vqducyysv87csobevanba'
 	},
-	channels: ['shawntc', 'honneyplay']
+	channels: ['shawntc', 'honneyplay', 'dillonea', 'pakratt0013', 'jessicamak']
 };
 var badWords = ['***', 'mod', 'mods'];
 var client = new tmi.client(options);
+var COOLDOWN = 30;
+var currentCooldown = COOLDOWN;
 
 // Load responses
 var responses = JSON.parse(fs.readFileSync('responses.json'));
@@ -29,6 +31,17 @@ function displayMessage(channel, msg){
 	client.action(channel, symbols[prefix] + '- ' + msg);
 }
 
+// Helper function to decide if enough time has passed for it to be used
+function guard(channel){
+	if(currentCooldown < 0){
+		currentCooldown = COOLDOWN;
+		return true;
+	}else{
+		client.action(channel, 'You may use me again in ' + currentCooldown + ' messages.');
+		return false;
+	}
+}
+
 
 client.connect();
 
@@ -36,12 +49,15 @@ client.on('connected', function(address, port){
 });
 
 client.on('chat', function(channel, user, message, self){
+	// Decrement cooldown
+	currentCooldown--;
+	
 	// Split the message
 	var parts = message.split(' ');
 	
 	// Get the start of the command
 	var cmd = parts[0];
-	
+
 	// Retrieve params if there are any.
 	if(parts.length > 1){
 		var params = parts[1];
@@ -49,11 +65,13 @@ client.on('chat', function(channel, user, message, self){
 	
 	// Responses
 	if(responses.responses.hasOwnProperty(cmd)){
+		//if(!guard(channel)) return;
 		displayMessage(channel, responses.responses[cmd]);
 	}
 	
 	// Counters
 	else if(responses.counters.hasOwnProperty(cmd)){
+		//if(!guard(channel)) return;
 		var msg = responses.counters[cmd].msg;
 		var count = responses.counters[cmd].count;
 		
@@ -79,6 +97,7 @@ client.on('chat', function(channel, user, message, self){
 		
 	// Interactives
 	else if(responses.interactives.hasOwnProperty(cmd)){
+		//if(!guard(channel)) return;
 		if(params !== undefined){
 			var msg = responses.interactives[cmd];
 			displayMessage(channel, msg.replace('$$', params));
@@ -87,6 +106,7 @@ client.on('chat', function(channel, user, message, self){
 	
 	// Special commands here
 	else if(message === '+shpun'){
+		//if(!guard(channel))return;
 		var puns = [
 			"I don't trust stairs, they're always up to something.",
 			"Why don't some couples go to the gym? Because some relationships don't work out.",
@@ -99,13 +119,17 @@ client.on('chat', function(channel, user, message, self){
 		displayMessage(channel, puns[index]);
 	}
 	else if(message === "+shwaves"){
+		//if(!guard(channel))return;
 		client.action(channel, '!waves');
 	}
+
+
 	for(b in badWords){
-		if(/*channel === '#honneyplay' && */message.indexOf(badWords[b]) !== -1){
+		if((channel === '#honneyplay' || channel === '#thelilocean_b') && message.indexOf(badWords[b]) !== -1){
 			for(m in mods){
 				if(mods[m] === "on"){
-					client.whisper(m, Date() + " You may be needed in Honney chat.");
+					console.log(user);
+					client.whisper(m, '[' + Date() + '][' + channel + '] ' + user + ': ' + message);
 				}
 			}
 		}
@@ -117,12 +141,26 @@ client.on('whisper', function(from, userstate, message, self){
 	if(self) return;
 	if(message === 'on'){
 		mods[from] = 'on';
-		client.whisper(from, 'You will now be notified if modes are requested.');
+		client.whisper(from, 'You will now be notified if mods are requested.');
 	}else if(message === 'off'){
 		mods[from] = 'off';
 		client.whisper(from, 'You will not be notified if mods are requested.');
+	}else if(message.indexOf('leave') !== -1){
+		var toLeave = message.split(' ')[1];
+		client.part(toLeave);
+		client.whisper(from, 'I have left ' + toLeave);
+	}else if(message.indexOf('join') !== -1){
+		var toJoin = message.split(' ')[1];
+		client.join(toJoin);
+		client.whisper(from, 'I have joined ' + toJoin);
+	}else if(message.indexOf('sleep') !== -1){
+		for(m in mods){
+			if(mods[m] === "on"){
+				client.whisper(m, 'Shawnderyier is going down for the night. Happy modding!');
+			}
+		}
 	}
-	fs.writeFile('mods.json', JSON.stringify(responses), function(err){
+	fs.writeFile('mods.json', JSON.stringify(mods), function(err){
 		if(err){
 			console.log(err);
 		}
