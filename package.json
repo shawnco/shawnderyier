@@ -1,0 +1,15 @@
+{
+  "name": "shawnderyier",
+  "version": "1.0.0",
+  "description": "Twitch bot for Shawntc",
+  "main": "app.js",
+  "dependencies": {
+    "node-twitchbot": "^1.2.2"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Shawn Contant <shawnc366@gmail.com> (http://www.shawncontant.com)",
+  "license": "ISC"
+}
