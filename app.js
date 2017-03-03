@@ -1,5 +1,6 @@
 var tmi = require('tmi.js');
 var fs = require('fs');
+var credentials = JSON.parse(fs.readFileSync('credentials.json'));
 var options = {
 	options: {
 		debug: true
@@ -9,8 +10,8 @@ var options = {
 		reconnect: true
 	},
 	identity: {
-		username: 'shawnderyier',
-		password: 'oauth:qqzk3f196vqducyysv87csobevanba'
+		username: credentials.username,
+		password: credentials.password
 	},
 	channels: ['shawntc', 'honneyplay', 'dillonea', 'pakratt0013', 'jessicamak']
 };
@@ -22,13 +23,14 @@ var currentCooldown = COOLDOWN;
 // Load responses
 var responses = JSON.parse(fs.readFileSync('responses.json'));
 var mods = JSON.parse(fs.readFileSync('mods.json'));
+var users = JSON.parse(fs.readFileSync('users.json'));
 console.log(mods);
 
 // Helper function so that r9k doesn't stop output
 function displayMessage(channel, msg){
 	var symbols = ['!', '#', '$', '%', '&', '?'];
 	var prefix = Math.floor(Math.random()*(symbols.length-1));
-	client.action(channel, symbols[prefix] + '- ' + msg);
+	client.say(channel, symbols[prefix] + '- ' + msg);
 }
 
 // Helper function to decide if enough time has passed for it to be used
@@ -37,7 +39,7 @@ function guard(channel){
 		currentCooldown = COOLDOWN;
 		return true;
 	}else{
-		client.action(channel, 'You may use me again in ' + currentCooldown + ' messages.');
+		client.say(channel, 'You may use me again in ' + currentCooldown + ' messages.');
 		return false;
 	}
 }
@@ -49,6 +51,14 @@ client.on('connected', function(address, port){
 });
 
 client.on('chat', function(channel, user, message, self){
+	
+	// Overcome the 14-num name attacks
+	if(/^[0-9]{14}$/g.test(user)){
+		client.ban(channel, user, 'Spam bot');
+	}
+	
+	
+	
 	// Decrement cooldown
 	currentCooldown--;
 	
@@ -120,7 +130,7 @@ client.on('chat', function(channel, user, message, self){
 	}
 	else if(message === "+shwaves"){
 		//if(!guard(channel))return;
-		client.action(channel, '!waves');
+		client.say(channel, '!waves');
 	}
 
 
@@ -146,13 +156,35 @@ client.on('whisper', function(from, userstate, message, self){
 		mods[from] = 'off';
 		client.whisper(from, 'You will not be notified if mods are requested.');
 	}else if(message.indexOf('leave') !== -1){
-		var toLeave = message.split(' ')[1];
-		client.part(toLeave);
-		client.whisper(from, 'I have left ' + toLeave);
+		// Only allow botmods to force leave
+		//if(users.moderator.includes(from)){
+			var toLeave = message.split(' ')[1];
+			if(toLeave.indexOf(',') !== -1){
+				var channels = toLeave.split(',');
+				for(c in channels){
+					client.part(channels[c]);
+					client.whisper(from, 'I have left ' + channels[c]);
+				}
+			}else{		
+				client.part(toLeave);
+				client.whisper(from, 'I have left ' + toLeave);
+			}
+		//}
 	}else if(message.indexOf('join') !== -1){
-		var toJoin = message.split(' ')[1];
-		client.join(toJoin);
-		client.whisper(from, 'I have joined ' + toJoin);
+		// Only allow botmods to force join
+		//if(users.moderator.includes(from)){
+			var toJoin = message.split(' ')[1];
+			if(toJoin.indexOf(',') !== -1){
+				var channels = toJoin.split(',');
+				for(c in channels){
+					client.join(channels[c]);
+					client.whisper(from, 'I have joined ' + channels[c]);
+				}
+			}else{
+				client.join(toJoin);
+				client.whisper(from, 'I have joined ' + toJoin);
+			}
+		//}
 	}else if(message.indexOf('sleep') !== -1){
 		for(m in mods){
 			if(mods[m] === "on"){
@@ -166,4 +198,14 @@ client.on('whisper', function(from, userstate, message, self){
 		}
 	});	
 	
+});
+
+// 3-3-2017: Whisper Honney mods if onesittingbull joins - they like to fake donations
+client.on('join', function(channel, username, self){
+	if(channel === '#honneyplay'){
+		if(username === 'onesittingbull'){
+			client.whisper('shawntc', 'onesittingbull has joined Honney chat, please be advised.');
+			client.whisper('dacoolbros', 'onesittingbull has joined Honney chat, please be advised.');
+		}
+	}
 });

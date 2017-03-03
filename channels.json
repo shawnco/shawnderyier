@@ -1,0 +1,25 @@
+{
+    "honneyplay": {
+        "COOLDOWN": 30,
+        "currentCooldown": 0,
+        "lurk": "true",
+        "mods": {
+            "shawntc": "on",
+            "dacoolbros": "off"
+        }
+    },
+    "pakratt0013": {
+        "COOLDOWN": 30,
+        "currentCooldown": 0,
+        "lurk": "true",
+        "mods": {}
+    },
+    "thelilocean_b": {
+        "COOLDOWN": 30,
+        "currentCooldown": 0,
+        "lurk": "false",
+        "mods": {
+            "shawntc": "on"
+        }
+    }
+}
