@@ -1,6 +1,9 @@
 var tmi = require('tmi.js');
 var fs = require('fs');
-var credentials = JSON.parse(fs.readFileSync('credentials.json'));
+var json = require('./lib/json');
+
+var credentials = json.getContents('credentials');
+
 var options = {
 	options: {
 		debug: true
@@ -20,11 +23,10 @@ var client = new tmi.client(options);
 var COOLDOWN = 30;
 var currentCooldown = COOLDOWN;
 
-// Load responses
-var responses = JSON.parse(fs.readFileSync('responses.json'));
-var mods = JSON.parse(fs.readFileSync('mods.json'));
-var users = JSON.parse(fs.readFileSync('users.json'));
-console.log(mods);
+var responses = json.getContents('responses');
+var mods = json.getContents('mods');
+var users = json.getContents('users');
+
 
 // Helper function so that r9k doesn't stop output
 function displayMessage(channel, msg){
@@ -92,13 +94,7 @@ client.on('chat', function(channel, user, message, self){
 				match = /(\+|\-)[0-9]*$/g.exec(params)[0];
 				eval('count = count ' + match);
 				responses.counters[cmd].count = count;
-				
-				// Update the count
-				fs.writeFile('responses.json', JSON.stringify(responses), function(err){
-					if(err){
-						console.log(err);
-					}
-				});				
+				json.saveContents(responses);				
 				
 			}
 		}
@@ -191,12 +187,8 @@ client.on('whisper', function(from, userstate, message, self){
 				client.whisper(m, 'Shawnderyier is going down for the night. Happy modding!');
 			}
 		}
-	}
-	fs.writeFile('mods.json', JSON.stringify(mods), function(err){
-		if(err){
-			console.log(err);
-		}
-	});	
+	}	
+	json.saveContents(mods);
 	
 });
 
